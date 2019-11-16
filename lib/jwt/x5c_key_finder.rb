@@ -9,11 +9,9 @@ module JWT
   # key from the first certificate.
   # See https://tools.ietf.org/html/rfc7515#section-4.1.6
   class X5cKeyFinder
-    def self.from(x5c_header, trusted_certificates, crls)
+    def self.from(x5c_header_or_certificates, trusted_certificates, crls)
       store = build_store(trusted_certificates, crls)
-      signing_certificate, *certificate_chain = x5c_header.map do |encoded|
-        OpenSSL::X509::Certificate.new(::Base64.strict_decode64(encoded))
-      end
+      signing_certificate, *certificate_chain = parse_certificates(x5c_header_or_certificates)
       store_context = OpenSSL::X509::StoreContext.new(store, signing_certificate, certificate_chain)
 
       if store_context.verify
@@ -25,6 +23,17 @@ module JWT
         raise JWT::VerificationError, error
       end
     end
+
+    def self.parse_certificates(x5c_header_or_certificates)
+      if x5c_header_or_certificates.all? { |obj| obj.is_a?(OpenSSL::X509::Certificate) }
+        x5c_header_or_certificates
+      else
+        x5c_header_or_certificates.map do |encoded|
+          OpenSSL::X509::Certificate.new(::Base64.strict_decode64(encoded))
+        end
+      end
+    end
+    private_class_method :parse_certificates
 
     def self.build_store(trusted_certificates, crls)
       store = OpenSSL::X509::Store.new

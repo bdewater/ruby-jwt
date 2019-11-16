@@ -47,6 +47,15 @@ describe JWT::X5cKeyFinder do
     expect(keyfinder.public_key.to_der).to eq(leaf_certificate.public_key.to_der)
   end
 
+  context 'already parsed certificates' do
+    let(:x5c_header) { [leaf_certificate] }
+
+    it 'returns the public key from a certificate that is signed by trusted roots and not revoked' do
+      expect(keyfinder).to be_a(OpenSSL::PKey::RSA)
+      expect(keyfinder.public_key.to_der).to eq(leaf_certificate.public_key.to_der)
+    end
+  end
+
   context 'certificate' do
     context 'expired' do
       let(:leaf_not_after) { Time.now - 3600 }
