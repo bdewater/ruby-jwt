@@ -8,6 +8,8 @@ describe JWT::X5cKeyFinder do
   let(:root_dn) { OpenSSL::X509::Name.parse('/DC=org/DC=fake-ca/CN=Fake CA') }
   let(:root_certificate) do
     cert = generate_cert(root_dn, root_key, 1)
+    ef = OpenSSL::X509::ExtensionFactory.new
+    cert.add_extension(ef.create_extension("basicConstraints", "CA:TRUE", true))
     cert.sign(root_key, 'sha256')
     cert
   end
@@ -20,7 +22,7 @@ describe JWT::X5cKeyFinder do
   let(:leaf_certificate) do
     cert = generate_cert(
       leaf_dn,
-      leaf_key,
+      leaf_key.public_key,
       leaf_serial,
       issuer: root_certificate,
       not_after: leaf_not_after
