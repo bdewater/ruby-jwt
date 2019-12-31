@@ -9,8 +9,8 @@ module JWT
   # key from the first certificate.
   # See https://tools.ietf.org/html/rfc7515#section-4.1.6
   class X5cKeyFinder
-    def self.from(x5c_header_or_certificates, trusted_certificates, crls)
-      store = build_store(trusted_certificates, crls)
+    def self.from(x5c_header_or_certificates, root_certificates, crls)
+      store = build_store(root_certificates, crls)
       signing_certificate, *certificate_chain = parse_certificates(x5c_header_or_certificates)
       store_context = OpenSSL::X509::StoreContext.new(store, signing_certificate, certificate_chain)
 
@@ -35,11 +35,11 @@ module JWT
     end
     private_class_method :parse_certificates
 
-    def self.build_store(trusted_certificates, crls)
+    def self.build_store(root_certificates, crls)
       store = OpenSSL::X509::Store.new
       store.purpose = OpenSSL::X509::PURPOSE_ANY
       store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK | OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
-      trusted_certificates.each { |certificate| store.add_cert(certificate) }
+      root_certificates.each { |certificate| store.add_cert(certificate) }
       crls && crls.each { |crl| store.add_crl(crl) }
       store
     end
